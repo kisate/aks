@@ -12,7 +12,7 @@ items = {}
 class Item(BaseModel):
     name: Optional[str]
     description: Optional[str]
-    image_url: Optional[str]
+    image: Optional[str]
 
 
 @app.get("/items/get_item")
@@ -43,6 +43,8 @@ async def change_item(item_id: str, item: Item):
         old_item.name = item.name
     if item.description is not None:
         old_item.description = item.description
+    if item.image is not None:
+        old_item.image = item.image
 
     return old_item
 
