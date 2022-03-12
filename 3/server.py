@@ -2,8 +2,6 @@ import socket
 import argparse
 
 from pathlib import Path
-import threading
-import time
 
 from threadpool import ThreadPool
 

@@ -4,7 +4,7 @@ import queue
 class ThreadPool:
     def __init__(self, max_threads: int, task_callable) -> None:
         self.max_threads = max_threads
-        self.task_queue = queue.Queue()
+        self.task_queue = queue.Queue() # потокобезопасная очередь
         self.threads = [Thread(target=self._thread_callable) for _ in range(self.max_threads)]
         self.running = False
         self.task_callable = task_callable 
