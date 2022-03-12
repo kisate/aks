@@ -15,6 +15,7 @@ class ThreadPool:
             thread.start()
 
     def stop(self):
+        self.task_queue.join()
         self.running = False
         for thread in self.threads:
             thread.join()
@@ -24,5 +25,6 @@ class ThreadPool:
             try:
                 task = self.task_queue.get(timeout=0.1)
                 self.task_callable(*task)
+                self.task_queue.task_done()
             except queue.Empty:
                 pass
