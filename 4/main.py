@@ -10,6 +10,7 @@ logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO, file
 PORT = 9001
 
 server_cache = Cache()
+blacklist = []
 
 def change_destination(msg: str):
     parts = msg.split("\r\n")
@@ -85,6 +86,8 @@ def add_to_cache(msg: str, query):
     else:
         server_cache.add_to_cache(query, last_modified, etag, msg.encode("ISO-8859-1"))
 
+def make_blacklist_message(address):
+    return bytes(f"HTTP/1.1 {403} Forbidden\r\n\r\nHost {address} is blacklisted.", "utf-8")
 
 def process_connection(conn: socket.socket, addr):
     
@@ -92,38 +95,34 @@ def process_connection(conn: socket.socket, addr):
         msg = get_message(conn).decode("utf-8")
         msg, address, query, request_type = change_destination(msg)
 
-        if request_type == "GET":
-            if server_cache.is_in_cache(query):
-                msg = make_refresh_request(msg, query)
+        if address.strip() in blacklist:
+            msg = make_blacklist_message(address)
+        else:
 
-        print(msg)
+            if request_type == "GET":
+                if server_cache.is_in_cache(query):
+                    msg = make_refresh_request(msg, query)
 
 
-        new_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        new_conn.connect((address, HTTP_PORT))
+            new_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            new_conn.connect((address, HTTP_PORT))
 
-        new_conn.sendall(bytes(msg, "utf-8"))
+            new_conn.sendall(bytes(msg, "utf-8"))
 
-        msg = get_message(new_conn)
+            msg = get_message(new_conn)
 
-        add_to_journal(msg, query)
+            add_to_journal(msg, query)
 
-        if request_type == "GET":
-            code = msg.decode("ISO-8859-1").split("\r\n")[0].strip().split(" ")[1]
-            if code == "304":
-                _, _, msg = server_cache.get_data(query)
-            else:
-                add_to_cache(msg.decode("ISO-8859-1"), query)
-
-        print(msg.decode("ISO-8859-1"))
-
+            if request_type == "GET":
+                code = msg.decode("ISO-8859-1").split("\r\n")[0].strip().split(" ")[1]
+                if code == "304":
+                    _, _, msg = server_cache.get_data(query)
+                else:
+                    add_to_cache(msg.decode("ISO-8859-1"), query)
 
     except Exception as e:
         msg = build_error_message(500, "Internal Server Error")
-        raise e
         print(e)
-
-    print(msg)
 
     conn.sendall(msg)
     conn.close()
@@ -147,6 +146,7 @@ def get_message(conn: socket.socket) -> bytes:
 
 
 def main():
+    global blacklist
     main_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     try:
@@ -157,6 +157,9 @@ def main():
     main_socket.bind(("", PORT))
     main_socket.listen()
 
+
+    with open("blacklist.txt", "r") as f:
+        blacklist = f.readlines()
 
     while True:
         try:
