@@ -6,7 +6,7 @@ class Cache:
         return url in self.data
 
     def add_to_cache(self, url: str, last_modied: str, etag: str, msg: str):
-        pass
+        self.data[url] = last_modied, etag, msg
 
     def get_data(self, url: str):
-        pass
+        return self.data[url]

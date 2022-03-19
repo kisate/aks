@@ -51,7 +51,7 @@ def add_to_journal(msg, query):
 def make_refresh_request(msg, query):
     parts = msg.split("\r\n")
 
-    _, last_modied, etag = server_cache.get_data(query) 
+    last_modied, etag, _ = server_cache.get_data(query) 
 
     parts.insert(1, f"Last-Modified: {last_modied}")
     parts.insert(1, f"If-None-Match: {etag}")
@@ -69,10 +69,10 @@ def add_to_cache(msg: str, query):
     parts = msg.split("\r\n")
     for part in parts:
         if part.startswith("Last-Modified:"):
-            last_modified = part.replace("Last-Modified: ")
+            last_modified = part.replace("Last-Modified: ", "")
             found_modified = True
         if part.startswith("ETag:"):
-            etag = part.replace("ETag: ")
+            etag = part.replace("ETag: ", "")
             found_etag = True
 
         if found_etag and found_modified:
@@ -81,15 +81,9 @@ def add_to_cache(msg: str, query):
     if server_cache.is_in_cache(query):
         last_val = server_cache.get_data(query)
         if last_val[0] != last_modified:
-            server_cache.add_to_cache(query, last_modified, etag, msg)
+            server_cache.add_to_cache(query, last_modified, etag, msg.encode("ISO-8859-1"))
     else:
-        server_cache.add_to_cache(query, last_modified, etag, msg)
-
-    
-
-    
-
-
+        server_cache.add_to_cache(query, last_modified, etag, msg.encode("ISO-8859-1"))
 
 
 def process_connection(conn: socket.socket, addr):
@@ -98,11 +92,11 @@ def process_connection(conn: socket.socket, addr):
         msg = get_message(conn).decode("utf-8")
         msg, address, query, request_type = change_destination(msg)
 
-        print(request_type)
-
         if request_type == "GET":
             if server_cache.is_in_cache(query):
-                new_msg = make_refresh_request(msg)
+                msg = make_refresh_request(msg, query)
+
+        print(msg)
 
 
         new_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -112,12 +106,17 @@ def process_connection(conn: socket.socket, addr):
 
         msg = get_message(new_conn)
 
-        if request_type == "GET":
-            
-
-        print(msg.decode("utf-8"))
-
         add_to_journal(msg, query)
+
+        if request_type == "GET":
+            code = msg.decode("ISO-8859-1").split("\r\n")[0].strip().split(" ")[1]
+            if code == "304":
+                _, _, msg = server_cache.get_data(query)
+            else:
+                add_to_cache(msg.decode("ISO-8859-1"), query)
+
+        print(msg.decode("ISO-8859-1"))
+
 
     except Exception as e:
         msg = build_error_message(500, "Internal Server Error")
