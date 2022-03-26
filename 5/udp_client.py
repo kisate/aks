@@ -1,21 +1,19 @@
 
 import socket
 
-serverAddressPort   = ("127.0.0.1", 9001)
-bufferSize          = 1024
+server_address_port   = ("", 9001)
+buffer_size          = 1024
+
+sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+try:
+    sock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+except Exception as e:
+    print(e)
 
 
-UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-
-UDPClientSocket.sendto("Hello UDP Server".encode("utf-8"), serverAddressPort)
-
-msgFromServer = UDPClientSocket.recvfrom(bufferSize)
-
-msg = "Message from Server {}".format(msgFromServer[0])
-
-print(msg)
+sock.bind(server_address_port)
 
 while True:
-    msgFromServer = UDPClientSocket.recvfrom(bufferSize)
+    msgFromServer = sock.recvfrom(buffer_size)
     msg = "Current time: {}".format(msgFromServer[0].decode("utf-8"))
     print(msg, end="\r")
