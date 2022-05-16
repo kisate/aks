@@ -20,7 +20,7 @@ layout = [
     [sg.Text('Port', size=(40, 1)), sg.InputText(str(port))],
     [sg.Text('Packets arrived:', size=(40, 1)), sg.Text(key='messages')],
     [sg.Text('Speed:', size=(40, 1)), sg.Text(key='speed')],
-    [sg.Button('Recieve packets')],
+    [sg.Button('Receive packets')],
 ]
 
 window = sg.Window('TCP Receiver', layout)
@@ -36,7 +36,7 @@ while True:
     if event in (None, 'Exit'):
         break
 
-    if event == 'Recieve packets':
+    if event == 'Receive packets':
         counter = 0
         first_time = None
 
