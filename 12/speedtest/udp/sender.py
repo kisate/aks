@@ -23,7 +23,7 @@ layout = [
     [sg.Button('Send packets')],
 ]
 
-window = sg.Window('TCP Sender', layout)
+window = sg.Window('UDP Sender', layout)
 
 while True:
     event, values = window.read()
@@ -39,12 +39,12 @@ while True:
             print(f'Parsing failed: {e}')
 
         try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.connect((host, port))
-            sock.sendall(bytes(str(total), encoding='ascii'))
+            sock.sendto(str(total).encode("ascii"), (host, port))
             for i in range(total):
                 message = build_message()
-                sock.sendall(message.encode("ascii"))
+                sock.sendto(message.encode("ascii"), (host, port))
         except Exception as e:
             print(f'Sending failed: {e}')
         finally:
