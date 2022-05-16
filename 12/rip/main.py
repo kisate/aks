@@ -1,5 +1,4 @@
 import json
-from unicodedata import name
 from node import Node
 
 from threading import Thread, RLock
