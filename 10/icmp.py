@@ -25,21 +25,6 @@ ICMP_MAX_RECV = 2048 # Max size of incoming buffer
 
 MAX_SLEEP = 1000
 
-
-class Response(object):
-    def __init__(self):
-        self.max_rtt = None
-        self.min_rtt = None
-        self.avg_rtt = None
-        self.packet_lost = None
-        self.ret_code = None
-        self.output = []
-
-        self.packet_size = None
-        self.timeout = None
-        self.destination = None
-        self.destination_ip = None
-
 class Ping(object):
     def __init__(self, destination, timeout=1000, packet_size=55):
 
@@ -172,11 +157,13 @@ class Ping(object):
             "!BBHHH", ICMP_ECHO, 0, checksum, self.own_id, self.seq_number
         )
 
+        data = str(default_timer()).encode("utf-8")
+
         padBytes = []
         startVal = 0x42
-        for i in range(startVal, startVal + (self.packet_size)):
+        for i in range(startVal, startVal + (self.packet_size - len(data))):
             padBytes += [(i & 0xff)]  # Keep chars in the 0-255 range
-        data = bytes(padBytes)
+        data = data + bytes(padBytes)
 
         # Calculate the checksum on the data and the dummy header.
         checksum = calculate_checksum(header + data) # Checksum is in network order
@@ -194,7 +181,6 @@ class Ping(object):
         try:
             current_socket.sendto(packet, (self.destination, 1)) # Port number is irrelevant for ICMP
         except socket.error as e:
-            self.response.output.append("General failure (%s)" % (e.args[1]))
             current_socket.close()
             return
 
